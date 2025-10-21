@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Educativo LocalStorage</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <img src="LOGOOO.png" alt="IESTP">
+    <h1>Sistema Educativo - IESTP RECUAY</h1>
+  </header>
+
+  <main>
+    <section class="section">
+      <h2>Registro de Estudiantes</h2>
+      <form id="formEstudiante">
+        <input type="hidden" id="editIndexEstudiante">
+        <input type="text" id="nombreEstudiante" placeholder="Nombre del estudiante" required>
+        <input type="text" id="dniEstudiante" placeholder="DNI" required>
+        <button type="submit">Guardar Estudiante</button>
+      </form>
+      <table id="tablaEstudiantes">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Registro de Asignaturas</h2>
+      <form id="formAsignatura">
+        <input type="hidden" id="editIndexAsignatura">
+        <input type="text" id="nombreAsignatura" placeholder="Nombre de la asignatura" required>
+        <button type="submit">Guardar Asignatura</button>
+      </form>
+      <table id="tablaAsignaturas">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Asignatura</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Registro de Notas</h2>
+      <form id="formNota">
+        <input type="hidden" id="editIndexNota">
+        <select id="selectEstudiante" required></select>
+        <select id="selectAsignatura" required></select>
+        <input type="number" id="nota" placeholder="Nota (0-20)" min="0" max="20" required>
+        <button type="submit">Guardar Nota</button>
+      </form>
+      <table id="tablaNotas">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Estudiante</th>
+            <th>Asignatura</th>
+            <th>Nota</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    // Cargar datos desde LocalStorage o crear arrays vacíos
+    let estudiantes = JSON.parse(localStorage.getItem("estudiantes")) || [];
+    let asignaturas = JSON.parse(localStorage.getItem("asignaturas")) || [];
+    let notas = JSON.parse(localStorage.getItem("notas")) || [];
+
+    const formEstudiante = document.getElementById("formEstudiante");
+    const formAsignatura = document.getElementById("formAsignatura");
+    const formNota = document.getElementById("formNota");
+
+    const tablaEstudiantes = document.querySelector("#tablaEstudiantes tbody");
+    const tablaAsignaturas = document.querySelector("#tablaAsignaturas tbody");
+    const tablaNotas = document.querySelector("#tablaNotas tbody");
+
+    const selectEstudiante = document.getElementById("selectEstudiante");
+    const selectAsignatura = document.getElementById("selectAsignatura");
+
+    // --- Funciones de Renderizado ---
+    function renderEstudiantes() {
+      tablaEstudiantes.innerHTML = "";
+      selectEstudiante.innerHTML = '<option value="">Seleccione estudiante</option>';
+      estudiantes.forEach((e, i) => {
+        tablaEstudiantes.innerHTML += `
+          <tr>
+            <td>${i+1}</td>
+            <td>${e.nombre}</td>
+            <td>${e.dni}</td>
+            <td>
+              <button class="edit-btn" onclick="editarEstudiante(${i})">Editar</button>
+              <button class="delete-btn" onclick="eliminarEstudiante(${i})">Eliminar</button>
+            </td>
+          </tr>`;
+        selectEstudiante.innerHTML += `<option value="${e.nombre}">${e.nombre}</option>`;
+      });
+      localStorage.setItem("estudiantes", JSON.stringify(estudiantes));
+    }
+
+    function renderAsignaturas() {
+      tablaAsignaturas.innerHTML = "";
+      selectAsignatura.innerHTML = '<option value="">Seleccione asignatura</option>';
+      asignaturas.forEach((a, i) => {
+        tablaAsignaturas.innerHTML += `
+          <tr>
+            <td>${i+1}</td>
+            <td>${a.nombre}</td>
+            <td>
+              <button class="edit-btn" onclick="editarAsignatura(${i})">Editar</button>
+              <button class="delete-btn" onclick="eliminarAsignatura(${i})">Eliminar</button>
+            </td>
+          </tr>`;
+        selectAsignatura.innerHTML += `<option value="${a.nombre}">${a.nombre}</option>`;
+      });
+      localStorage.setItem("asignaturas", JSON.stringify(asignaturas));
+    }
+
+    function renderNotas() {
+      tablaNotas.innerHTML = "";
+      notas.forEach((n, i) => {
+        tablaNotas.innerHTML += `
+          <tr>
+            <td>${i+1}</td>
+            <td>${n.estudiante}</td>
+            <td>${n.asignatura}</td>
+            <td>${n.nota}</td>
+            <td>
+              <button class="edit-btn" onclick="editarNota(${i})">Editar</button>
+              <button class="delete-btn" onclick="eliminarNota(${i})">Eliminar</button>
+            </td>
+          </tr>`;
+      });
+      localStorage.setItem("notas", JSON.stringify(notas));
+    }
+
+    // --- CRUD Estudiantes ---
+    formEstudiante.addEventListener("submit", e => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombreEstudiante").value;
+      const dni = document.getElementById("dniEstudiante").value;
+      const index = document.getElementById("editIndexEstudiante").value;
+
+      if (index === "") {
+        estudiantes.push({ nombre, dni });
+      } else {
+        estudiantes[index] = { nombre, dni };
+      }
+
+      formEstudiante.reset();
+      document.getElementById("editIndexEstudiante").value = "";
+      renderEstudiantes();
+    });
+
+    function editarEstudiante(i) {
+      document.getElementById("nombreEstudiante").value = estudiantes[i].nombre;
+      document.getElementById("dniEstudiante").value = estudiantes[i].dni;
+      document.getElementById("editIndexEstudiante").value = i;
+    }
+
+    function eliminarEstudiante(i) {
+      if (confirm("¿Eliminar estudiante?")) {
+        estudiantes.splice(i, 1);
+        renderEstudiantes();
+      }
+    }
+
+    // --- CRUD Asignaturas ---
+    formAsignatura.addEventListener("submit", e => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombreAsignatura").value;
+      const index = document.getElementById("editIndexAsignatura").value;
+
+      if (index === "") {
+        asignaturas.push({ nombre });
+      } else {
+        asignaturas[index] = { nombre };
+      }
+
+      formAsignatura.reset();
+      document.getElementById("editIndexAsignatura").value = "";
+      renderAsignaturas();
+    });
+
+    function editarAsignatura(i) {
+      document.getElementById("nombreAsignatura").value = asignaturas[i].nombre;
+      document.getElementById("editIndexAsignatura").value = i;
+    }
+
+    function eliminarAsignatura(i) {
+      if (confirm("¿Eliminar asignatura?")) {
+        asignaturas.splice(i, 1);
+        renderAsignaturas();
+      }
+    }
+
+    // --- CRUD Notas ---
+    formNota.addEventListener("submit", e => {
+      e.preventDefault();
+      const estudiante = selectEstudiante.value;
+      const asignatura = selectAsignatura.value;
+      const nota = document.getElementById("nota").value;
+      const index = document.getElementById("editIndexNota").value;
+
+      if (index === "") {
+        notas.push({ estudiante, asignatura, nota });
+      } else {
+        notas[index] = { estudiante, asignatura, nota };
+      }
+
+      formNota.reset();
+      document.getElementById("editIndexNota").value = "";
+      renderNotas();
+    });
+
+    function editarNota(i) {
+      selectEstudiante.value = notas[i].estudiante;
+      selectAsignatura.value = notas[i].asignatura;
+      document.getElementById("nota").value = notas[i].nota;
+      document.getElementById("editIndexNota").value = i;
+    }
+
+    function eliminarNota(i) {
+      if (confirm("¿Eliminar nota?")) {
+        notas.splice(i, 1);
+        renderNotas();
+      }
+    }
+
+    // --- Inicializar ---
+    renderEstudiantes();
+    renderAsignaturas();
+    renderNotas();
+  </script>
+</body>
+</html>
